@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "কোন তাপমাত্রায় সেলসিয়াস ও ফারেনহাইট স্কেলে একই মান পাওয়া যায়?",
+          options: {
+            a: "32°",
+            b: "40°",
+            c: "-320°",
+            d: "-40°",
+          },
+          correct: "d",
+          explanation:
+            "<p>সেলসিয়াস ও ফারেনহাইট স্কেলে তাপমাত্রা রূপান্তরের সূত্র হলো C/5 = (F-32)/9। যদি C = F হয়, তবে C/5 = (C-32)/9 হয়। এই সমীকরণটি সমাধান করলে 9C = 5C - 160, অর্থাৎ 4C = -160, যা থেকে C = -40° পাওয়া যায়। সুতরাং, -40° তাপমাত্রায় সেলসিয়াস ও ফারেনহাইট স্কেলে একই মান পাওয়া যায়।</p>",
+        },
+        {
+          id: 2,
+          question: "সেন্টিগ্রেড স্কেলে ৯৮.৫০° ফারেনহাইট তাপমাত্রার মান কত?",
+          options: {
+            a: "35.944°C",
+            b: "45.456°C",
+            c: "36.544°C",
+            d: "36.944°C",
+          },
+          correct: "d",
+          explanation:
+            "<p>ফারেনহাইট থেকে সেন্টিগ্রেড স্কেলে রূপান্তরের সূত্র হলো C = (F - 32) × 5/9। এখানে F = 98.50°। সুতরাং, C = (98.50 - 32) × 5/9 = (66.50) × 5/9 = 332.5 / 9 = 36.944°C।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "কোন তাপমাত্রায় ফারেনহাইট ও কেলভিন স্কেলে একই পাঠ পাওয়া যায়?",
+          options: {
+            a: "-40°",
+            b: "100°",
+            c: "287.13°",
+            d: "574.25°",
+          },
+          correct: "d",
+          explanation:
+            "<p>ফারেনহাইট ও কেলভিন স্কেলে একই পাঠ পাওয়ার জন্য, আমরা সূত্র F = K ধরে ক্যালকুলেশন করব। সেলসিয়াস স্কেল থেকে কেলভিন স্কেলে যেতে, K = C + 273.15 এবং সেলসিয়াস থেকে ফারেনহাইটে যেতে F = (9/5)C + 32। এখন F = K হলে, (9/5)C + 32 = C + 273.15। এই সমীকরণ সমাধান করলে C ≈ 301.25°C পাওয়া যায়। এরপর F = K = 301.25 + 273.15 = 574.4। প্রদত্ত বিকল্পগুলির মধ্যে 574.25° সবচেয়ে কাছাকাছি।</p>",
+        },
+        {
+          id: 4,
+          question: "5°C তাপমাত্রার জন্য ফারেনহাইট স্কেলে মান কত?",
+          options: {
+            a: "41°F",
+            b: "37°F",
+            c: "9°F",
+            d: "2.78°F",
+          },
+          correct: "a",
+          explanation:
+            "<p>সেলসিয়াস থেকে ফারেনহাইট স্কেলে রূপান্তরের সূত্র হলো F = (C × 9/5) + 32। এখানে C = 5°C। সুতরাং, F = (5 × 9/5) + 32 = 9 + 32 = 41°F।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "একটি বস্তুর তাপমাত্রা 9 মিনিটে 50°C থেকে 35°C-এ নেমে আসে। ফারেনহাইট স্কেলে তাপমাত্রা নেমে আসার হার কত?",
+          options: {
+            a: "0.03 °F s⁻¹",
+            b: "0.04 °F s⁻¹",
+            c: "0.05 °F s⁻¹",
+            d: "0.06 °F s⁻¹",
+          },
+          correct: "c",
+          explanation:
+            "<p>সেলসিয়াস স্কেলে তাপমাত্রার পার্থক্য = 50°C - 35°C = 15°C। ফারেনহাইট স্কেলে এই পার্থক্য = 15 × 9/5 = 27°F। সময় = 9 মিনিট = 9 × 60 সেকেন্ড = 540 সেকেন্ড। সুতরাং, ফারেনহাইট স্কেলে তাপমাত্রা নেমে আসার হার = 27°F / 540 s = 0.05 °F s⁻¹।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "নিম্নের কত তাপ বর্জন করে 100°C তাপমাত্রার 1 kg জলীয় বাষ্প 100°C তাপমাত্রার পানিতে পরিণত হয়?",
+          options: {
+            a: "6822000 J",
+            b: "2268000 J",
+            c: "2286000 J",
+            d: "2206800 J",
+          },
+          correct: "b",
+          explanation:
+            "<p>100°C তাপমাত্রার 1 kg জলীয় বাষ্পকে 100°C তাপমাত্রার পানিতে পরিণত করতে হলে জলীয় বাষ্পের ঘনীভবন লীন তাপ বর্জন করতে হয়। পানির ঘনীভবন লীন তাপ (L<sub>v</sub>) প্রায় 2268 kJ/kg বা 2.268 × 10<sup>6</sup> J/kg। এখানে, ভর m = 1 kg। সুতরাং, বর্জিত তাপ Q = m × L<sub>v</sub> = 1 kg × 2268000 J/kg = 2268000 J।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "কোনো সিস্টেম পরিবেশ থেকে 800J তাপশক্তি শোষণ করায় এর অন্তঃস্থ শক্তি 500 J বৃদ্ধি পায়। সিস্টেম কর্তৃক পরিবেশের উপর কৃত কাজের পরিমাণ কত?",
+          options: {
+            a: "200 J",
+            b: "400 J",
+            c: "1500 J",
+            d: "300 J",
+          },
+          correct: "d",
+          explanation:
+            "<p>তাপগতিবিদ্যার প্রথম সূত্রানুযায়ী, ΔQ = ΔU + ΔW, যেখানে ΔQ হলো শোষিত তাপশক্তি, ΔU হলো অন্তঃস্থ শক্তির পরিবর্তন এবং ΔW হলো সিস্টেম কর্তৃক সম্পাদিত কাজ। এখানে, ΔQ = +800 J (শোষিত হওয়ায় ধনাত্মক) এবং ΔU = +500 J (বৃদ্ধি পাওয়ায় ধনাত্মক)। সুতরাং, 800 J = 500 J + ΔW। এর থেকে ΔW = 800 J - 500 J = 300 J।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "যদি 2 cal তাপ সম্পূর্ণরূপে কাজে রূপান্তরিত হয় তবে কাজের পরিমাণ কত?",
+          options: {
+            a: "4.2 J",
+            b: "4.8 J",
+            c: "8.2 J",
+            d: "8.4 J",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, 1 ক্যালরি (cal) ≈ 4.2 জুল (J)। সুতরাং, 2 ক্যালরি তাপ সম্পূর্ণরূপে কাজে রূপান্তরিত হলে কাজের পরিমাণ হবে 2 cal × 4.2 J/cal = 8.4 J।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "সমোষ্ণ প্রক্রিয়ায় একটি সিলিন্ডারের মধ্যে রাখা কিছু গ্যাস 800J কাজ সম্পাদন করলে গ্যাস কর্তৃক শোষিত তাপের পরিমাণ কত জুল?",
+          options: {
+            a: "0",
+            b: "400",
+            c: "800",
+            d: "900",
+          },
+          correct: "c",
+          explanation:
+            "<p>সমোষ্ণ প্রক্রিয়ায় (Isothermal process) তাপমাত্রা স্থির থাকে। তাপগতিবিদ্যার প্রথম সূত্রানুযায়ী, ΔQ = ΔU + ΔW। সমোষ্ণ প্রক্রিয়ায় গ্যাসের অন্তঃস্থ শক্তি (ΔU) এর কোনো পরিবর্তন হয় না, অর্থাৎ ΔU = 0। সুতরাং, ΔQ = ΔW। যদি গ্যাস 800J কাজ সম্পাদন করে (ΔW = +800J), তবে গ্যাস কর্তৃক শোষিত তাপের পরিমাণও 800J হবে।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "শোষিত তাপ ΔQ = 700J এবং সম্পাদিত কাজ ΔW = 200J হলে কোনো সিস্টেমের অভ্যন্তরীণ শক্তি কত বৃদ্ধি পাবে?",
+          options: {
+            a: "900 J",
+            b: "700 J",
+            c: "500 J",
+            d: "500 J",
+          },
+          correct: "c",
+          explanation:
+            "<p>তাপগতিবিদ্যার প্রথম সূত্রানুযায়ী, ΔQ = ΔU + ΔW। এখানে, ΔQ (শোষিত তাপ) = 700J এবং ΔW (সম্পাদিত কাজ) = 200J। আমরা অন্তঃস্থ শক্তির পরিবর্তন ΔU নির্ণয় করব। ΔU = ΔQ - ΔW = 700J - 200J = 500J। সুতরাং, সিস্টেমের অভ্যন্তরীণ শক্তি 500 J বৃদ্ধি পাবে।</p>",
+        },
+        {
+          id: 11,
+          question:
+            "কোনো সিস্টেমের উপর 500J কাজ সম্পাদন করায় সিস্টেম হতে 300J তাপ শক্তি বেরিয়ে গেল। সিস্টেমটির অন্তঃস্থ শক্তির পরিবর্তন কত?",
+          options: {
+            a: "-400 J",
+            b: "-200 J",
+            c: "+200 J",
+            d: "+800 J",
+          },
+          correct: "c",
+          explanation:
+            "<p>তাপগতিবিদ্যার প্রথম সূত্রানুযায়ী, ΔQ = ΔU + ΔW। এখানে, সিস্টেমের উপর কাজ সম্পাদিত হওয়ায় ΔW = -500 J (ঋণাত্মক)। সিস্টেম থেকে তাপ শক্তি বেরিয়ে যাওয়ায় ΔQ = -300 J (ঋণাত্মক)। সুতরাং, -300 J = ΔU + (-500 J)। এর থেকে ΔU = -300 J + 500 J = +200 J। অর্থাৎ, সিস্টেমটির অন্তঃস্থ শক্তি 200 J বৃদ্ধি পাবে।</p>",
+        },
+        {
+          id: 12,
+          question: "γ = 5/3 এর জন্য কোনটি সঠিক?",
+          options: {
+            a: "C<sub>p</sub> = 5/3 R",
+            b: "C<sub>v</sub> = 3/2 R",
+            c: "C<sub>v</sub> = 5/3 R",
+            d: "C<sub>v</sub> = 2R",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, মোলার আপেক্ষিক তাপদ্বয়ের অনুপাত γ = C<sub>p</sub>/C<sub>v</sub> এবং C<sub>p</sub> - C<sub>v</sub> = R (মায়ারের সূত্র)। এই দুটি সূত্র ব্যবহার করে আমরা C<sub>v</sub> এর মান বের করতে পারি। C<sub>p</sub> = γC<sub>v</sub>। এখন, γC<sub>v</sub> - C<sub>v</sub> = R, অর্থাৎ C<sub>v</sub>(γ - 1) = R। সুতরাং, C<sub>v</sub> = R/(γ - 1)। এখানে γ = 5/3 দেওয়া আছে। C<sub>v</sub> = R / (5/3 - 1) = R / (2/3) = 3R/2।</p>",
+        },
+        {
+          id: 13,
+          question: "কোনো গ্যাসের Y = 1.5 উক্ত গ্যাসের জন্য কোনটি সঠিক?",
+          options: {
+            a: "C<sub>p</sub> = 3R",
+            b: "C<sub>p</sub> = 5R",
+            c: "C<sub>v</sub> = 3R",
+            d: "C<sub>v</sub> = 5R",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, তাপগতিবিদ্যার সূত্রানুযায়ী C<sub>v</sub> = R / (Y - 1) এবং C<sub>p</sub> = Y C<sub>v</sub>। এখানে গ্যাসের জন্য Y = 1.5 দেওয়া আছে। প্রথমে C<sub>v</sub> এর মান বের করি: C<sub>v</sub> = R / (1.5 - 1) = R / 0.5 = 2R। এরপর C<sub>p</sub> এর মান বের করি: C<sub>p</sub> = Y × C<sub>v</sub> = 1.5 × 2R = 3R। সুতরাং, Y = 1.5 হলে একটি গ্যাসের জন্য সঠিক সম্পর্কগুলি হলো C<sub>v</sub> = 2R এবং C<sub>p</sub> = 3R। প্রদত্ত বিকল্পগুলির মধ্যে, বিকল্প (a) C<sub>p</sub> = 3R সঠিক।</p>",
+        },
+        {
+          id: 14,
+          question:
+            "আর্গন গ্যাসের ক্ষেত্রে γ = 5/3 হলে স্থির আয়তনে মোলার আপেক্ষিক তাপ কত?",
+          options: {
+            a: "1/2 R",
+            b: "3/2 R",
+            c: "5/2 R",
+            d: "7/2 R",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, স্থির আয়তনে মোলার আপেক্ষিক তাপ C<sub>v</sub> এবং মোলার আপেক্ষিক তাপদ্বয়ের অনুপাত γ = C<sub>p</sub>/C<sub>v</sub>। মায়ারের সূত্রানুযায়ী C<sub>p</sub> - C<sub>v</sub> = R। এই দুটি সূত্র ব্যবহার করে আমরা C<sub>v</sub> নির্ণয় করতে পারি। C<sub>v</sub> = R / (γ - 1)। এখানে γ = 5/3। সুতরাং, C<sub>v</sub> = R / (5/3 - 1) = R / (2/3) = 3R/2।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "একটি ইঞ্জিন 3400 J তাপ গ্রহণ করে এবং 2400 J তাপ বর্জন করে। ইঞ্জিনের দক্ষতা কত?",
+          options: {
+            a: "41.67%",
+            b: "10%",
+            c: "29.41%",
+            d: "40%",
+          },
+          correct: "c",
+          explanation:
+            "<p>ইঞ্জিনের কর্মদক্ষতা η = (গৃহীত তাপ - বর্জিত তাপ) / গৃহীত তাপ। এখানে, গৃহীত তাপ Q₁ = 3400 J এবং বর্জিত তাপ Q₂ = 2400 J। সুতরাং, η = (3400 - 2400) / 3400 = 1000 / 3400 ≈ 0.2941। শতকরা হিসাবে, দক্ষতা = 0.2941 × 100% = 29.41%।</p>",
+        },
+        {
+          id: 16,
+          question:
+            "127°C এবং 27°C তাপমাত্রার মধ্যে কর্মরত একটি কার্নো ইঞ্জিনের কর্মদক্ষতা-",
+          options: {
+            a: "15%",
+            b: "25%",
+            c: "35%",
+            d: "50%",
+          },
+          correct: "b",
+          explanation:
+            "<p>কার্নো ইঞ্জিনের কর্মদক্ষতা η = 1 - (T₂/T₁), যেখানে T₁ উচ্চ তাপমাত্রা এবং T₂ নিম্ন তাপমাত্রা (উভয়ই কেলভিন স্কেলে)। উচ্চ তাপমাত্রা T₁ = 127°C = (127 + 273) K = 400 K। নিম্ন তাপমাত্রা T₂ = 27°C = (27 + 273) K = 300 K। সুতরাং, η = 1 - (300/400) = 1 - 0.75 = 0.25। শতকরা হিসাবে, দক্ষতা = 0.25 × 100% = 25%।</p>",
+        },
+        {
+          id: 17,
+          question:
+            "একটি রেফ্রিজারেটরের কার্যকৃত সহগ K = 2.5। এটি ঠাণ্ডা প্রকোষ্ঠ হতে প্রতি চক্রে 500 J তাপ অপসারণ করলে, প্রতি চক্রে সরবরাহকৃত কাজ কত হবে?",
+          options: {
+            a: "1250 J",
+            b: "502.5 J",
+            c: "500 J",
+            d: "200 J",
+          },
+          correct: "d",
+          explanation:
+            "<p>রেফ্রিজারেটরের কার্যকৃত সহগ (K) এর সূত্র হলো K = Q₂ / W, যেখানে Q₂ হলো ঠাণ্ডা প্রকোষ্ঠ থেকে অপসারিত তাপ এবং W হলো সম্পাদিত কাজ। এখানে K = 2.5 এবং Q₂ = 500 J। সুতরাং, W = Q₂ / K = 500 J / 2.5 = 200 J।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "127°C এবং 427°C তাপমাত্রার মধ্যে কার্যরত একটি ইঞ্জিনের সম্ভাব্য সর্বোচ্চ দক্ষতা কত হবে?",
+          options: {
+            a: "23.62%",
+            b: "42.86%",
+            c: "50%",
+            d: "70.25%",
+          },
+          correct: "b",
+          explanation:
+            "<p>ইঞ্জিনের সর্বোচ্চ সম্ভাব্য দক্ষতা হলো কার্নো ইঞ্জিনের দক্ষতা, যা η = 1 - (T₂/T₁)। এখানে, T₁ = 427°C = (427 + 273) K = 700 K এবং T₂ = 127°C = (127 + 273) K = 400 K। সুতরাং, η = 1 - (400/700) = 1 - 4/7 ≈ 0.42857। শতকরা হিসাবে, দক্ষতা ≈ 42.86%।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "একটি কার্নো ইঞ্জিন 500K তাপমাত্রার তাপ উৎস থেকে 300 cal গ্রহণ করে এবং তাপ গ্রাহকে 225 cal তাপ বর্জন করে। তাপ গ্রাহকের তাপমাত্রা কত?",
+          options: {
+            a: "666.67 K",
+            b: "135 K",
+            c: "300 K",
+            d: "375 K",
+          },
+          correct: "d",
+          explanation:
+            "<p>কার্নো ইঞ্জিনের ক্ষেত্রে তাপমাত্রার সাথে তাপের অনুপাতের সম্পর্কটি হলো Q₁/T₁ = Q₂/T₂। এখানে, Q₁ = 300 cal, T₁ = 500 K, এবং Q₂ = 225 cal। আমরা T₂ নির্ণয় করব। T₂ = (Q₂ × T₁) / Q₁ = (225 cal × 500 K) / 300 cal = 112500 / 300 = 375 K।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "একটি কার্নো ইঞ্জিন বাষ্প বিন্দু ও বরফ বিন্দুর মধ্যে কাজ করলে এর দক্ষতা কত?",
+          options: {
+            a: "61.28%",
+            b: "62.18%",
+            c: "26.18%",
+            d: "26.81%",
+          },
+          correct: "d",
+          explanation:
+            "<p>বাষ্প বিন্দু (Steam point) হলো 100°C বা 373 K (উচ্চ তাপমাত্রা, T₁)। বরফ বিন্দু (Ice point) হলো 0°C বা 273 K (নিম্ন তাপমাত্রা, T₂)। কার্নো ইঞ্জিনের দক্ষতা η = 1 - (T₂/T₁)। সুতরাং, η = 1 - (273 / 373) ≈ 1 - 0.7319 = 0.2681। শতকরা হিসাবে, দক্ষতা = 0.2681 × 100% = 26.81%।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "একটি হিমায়কের শীতল বস্তুর তাপমাত্রা 250K এবং বাহিরের গরম আবহাওয়ার তাপমাত্রা 500K। এর কার্যকৃত সহগ কত?",
+          options: {
+            a: "1",
+            b: "1.5",
+            c: "2",
+            d: "2.5",
+          },
+          correct: "a",
+          explanation:
+            "<p>একটি হিমায়কের কার্যকৃত সহগ (K) এর সূত্র হলো K = T₂ / (T₁ - T₂), যেখানে T₂ হলো শীতল বস্তুর তাপমাত্রা (নিম্ন তাপমাত্রা) এবং T₁ হলো গরম আবহাওয়ার তাপমাত্রা (উচ্চ তাপমাত্রা)। এখানে T₂ = 250 K এবং T₁ = 500 K। সুতরাং, K = 250 / (500 - 250) = 250 / 250 = 1।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "-10°C এবং 20°C উষ্ণতার মধ্যে ক্রিয়ারত একটি হিমায়কের সর্বোচ্চ কার্যকৃত সহগ-",
+          options: {
+            a: "4.8",
+            b: "3.9",
+            c: "7.8",
+            d: "8.8",
+          },
+          correct: "d",
+          explanation:
+            "<p>হিমায়কের কার্যকৃত সহগ (K) এর সূত্র হলো K = T₂ / (T₁ - T₂)। এখানে T₁ = 20°C = (20 + 273) K = 293 K এবং T₂ = -10°C = (-10 + 273) K = 263 K। সুতরাং, K = 263 / (293 - 263) = 263 / 30 ≈ 8.77। প্রদত্ত বিকল্পগুলির মধ্যে 8.8 সবচেয়ে কাছাকাছি।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "একটি কার্নো ইঞ্জিন 500K এবং 250K তাপমাত্রার দুটি উষ্ণতার মাধ্যমে পরিচালিত হয়। প্রত্যেক চক্রে ইঞ্জিন যদি 1 kcal তাপ গ্রহণ করে তাহলে প্রত্যেক চক্রে তাপগ্রাহকে তাপ বর্জন করার পরিমাণ কত?",
+          options: {
+            a: "500 cal",
+            b: "1000 cal",
+            c: "500 k cal",
+            d: "10 k cal",
+          },
+          correct: "a",
+          explanation:
+            "<p>কার্নো ইঞ্জিনের ক্ষেত্রে Q₁/T₁ = Q₂/T₂। এখানে T₁ = 500 K, T₂ = 250 K এবং Q₁ = 1 kcal = 1000 cal। আমরা Q₂ নির্ণয় করব। Q₂ = (Q₁ × T₂) / T₁ = (1000 cal × 250 K) / 500 K = 500 cal।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "একটি রেফ্রিজারেটরের কার্যকৃত সহগ হলো 4.6। ঠাণ্ডা প্রকোষ্ঠ থেকে প্রতি চক্রে 250J তাপ অপসারণ করলে প্রতি চক্রে কৃত কাজের পরিমাণ কত?",
+          options: {
+            a: "46 J",
+            b: "48 J",
+            c: "50 J",
+            d: "54 J",
+          },
+          correct: "d",
+          explanation:
+            "<p>রেফ্রিজারেটরের কার্যকৃত সহগ (K) এর সূত্র হলো K = Q₂ / W, যেখানে Q₂ হলো ঠাণ্ডা প্রকোষ্ঠ থেকে অপসারিত তাপ এবং W হলো সম্পাদিত কাজ। এখানে K = 4.6 এবং Q₂ = 250 J। সুতরাং, W = Q₂ / K = 250 J / 4.6 ≈ 54.34 J। প্রদত্ত অপশনগুলোর মধ্যে 54 J সবচেয়ে কাছাকাছি।</p>",
+        },
+        {
+          id: 25,
+          question:
+            "20°C এবং 100°C তাপমাত্রাদ্বয়ের মধ্যে কার্যরত একটি কার্নো ইঞ্জিনের দক্ষতা হবে-",
+          options: {
+            a: "0.8",
+            b: "0.214",
+            c: "-0.8",
+            d: "-4",
+          },
+          correct: "b",
+          explanation:
+            "<p>কার্নো ইঞ্জিনের দক্ষতা η = 1 - (T₂/T₁)। উচ্চ তাপমাত্রা T₁ = 100°C = (100 + 273) K = 373 K। নিম্ন তাপমাত্রা T₂ = 20°C = (20 + 273) K = 293 K। সুতরাং, η = 1 - (293 / 373) ≈ 1 - 0.7855 = 0.2145। প্রদত্ত বিকল্পগুলির মধ্যে 0.214 সবচেয়ে কাছাকাছি।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "একটি মোটর গাড়ির টায়ার 27°C তাপমাত্রা ও 2 বায়ুমণ্ডলীয় চাপে আছে। যদি টায়ারটি হঠাৎ ফেটে যায় তবে চূড়ান্ত তাপমাত্রা নির্ণয় করো। (γ=1.4)",
+          options: {
+            a: "230 K",
+            b: "312 K",
+            c: "180 K",
+            d: "246 K",
+          },
+          correct: "d",
+          explanation:
+            "<p>টায়ার ফেটে যাওয়া একটি রুদ্ধতাপীয় প্রসারণ প্রক্রিয়া। এর জন্য সম্পর্কটি হলো T₂ = T₁(P₂/P₁)<sup>(γ-1)/γ</sup>। প্রাথমিক তাপমাত্রা T₁ = 27°C = 300 K। প্রাথমিক চাপ P₁ = 2 atm। চূড়ান্ত চাপ P₂ = 1 atm। γ = 1.4। T₂ = 300 K × (1/2)<sup>(1.4-1)/1.4</sup> = 300 × (0.5)<sup>0.2857</sup> ≈ 300 × 0.82 ≈ 246 K।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "রুদ্ধতাপ প্রক্রিয়ায় (γ = 1.4) দ্বি-পরমাণু গ্যাসের চাপ 0.5% বৃদ্ধি করা হলে, গ্যাসের আয়তন কমবে-",
+          options: {
+            a: "0.5%",
+            b: "0.70%",
+            c: "1.0%",
+            d: "0.36%",
+          },
+          correct: "d",
+          explanation:
+            "<p>রুদ্ধতাপীয় প্রক্রিয়ায় চাপ ও আয়তনের সম্পর্ক P V<sup>γ</sup> = ধ্রুবক। ক্ষুদ্র পরিবর্তনের জন্য, ΔV/V ≈ - (1/γ) (ΔP/P)। এখানে ΔP/P = 0.5% এবং γ = 1.4। ΔV/V ≈ - (1/1.4) × 0.5% ≈ -0.357%। অর্থাৎ, গ্যাসের আয়তন প্রায় 0.36% কমবে।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "500m উঁচু জলপ্রপাতের তলদেশ ও শীর্ষ দেশের পানির তাপমাত্রার পার্থক্য কত হবে? (g = 10 ms⁻², পানির আপেক্ষিক তাপ = 4200 Jkg⁻¹K⁻¹)",
+          options: {
+            a: "0.50°C",
+            b: "1.19°C",
+            c: "5.0°C",
+            d: "50°C",
+          },
+          correct: "b",
+          explanation:
+            "<p>জলপ্রপাতের উপর থেকে পানি নিচে পড়ার সময় এর স্থিতিশক্তি (mgh) তাপশক্তিতে (mcΔT) রূপান্তরিত হয়। সুতরাং, mgh = mcΔT, বা ΔT = gh/c। ΔT = (10 × 500) / 4200 ≈ 1.19°C। অতএব, পানির তাপমাত্রার পার্থক্য প্রায় 1.19°C হবে।</p>",
+        },
+        {
+          id: 29,
+          question:
+            "0.01 kg পানিকে 0°C থেকে 10°C-এ উত্তপ্ত করা হলো। এনট্রপি পরিবর্তন হলো-",
+          options: {
+            a: "3.5 JK⁻¹",
+            b: "4.5 JK⁻¹",
+            c: "2.5 JK⁻¹",
+            d: "1.5 JK⁻¹",
+          },
+          correct: "d",
+          explanation:
+            "<p>তাপমাত্রার পরিবর্তনের সাথে এনট্রপির পরিবর্তন (ΔS) নির্ণয়ের সূত্র হলো ΔS = mc ln(T₂/T₁)। এখানে m = 0.01 kg, c = 4200 J kg⁻¹K⁻¹, T₁ = 0°C = 273 K, T₂ = 10°C = 283 K। ΔS = 0.01 × 4200 × ln(283/273) = 42 × ln(1.0366) ≈ 42 × 0.036 ≈ 1.51 J/K। অতএব, এনট্রপির পরিবর্তন প্রায় 1.5 J/K।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "0°C তাপমাত্রার 1 kg বরফকে 0°C তাপমাত্রার পানিতে পরিণত করতে এনট্রপির পরিবর্তন কত হবে? (গলনের সুপ্ততাপ = 336000 J/kg)",
+          options: {
+            a: "1231 J/K বৃদ্ধি পাবে",
+            b: "1231 J/K হ্রাস পাবে",
+            c: "336000 J/K বৃদ্ধি পাবে",
+            d: "336000 J/K হ্রাস পাবে",
+          },
+          correct: "a",
+          explanation:
+            "<p>এনট্রপির পরিবর্তন (ΔS) এর সূত্র হলো ΔS = Q/T। শোষিত তাপ Q = m × Lf = 1 kg × 336000 J/kg = 336000 J। তাপমাত্রা T = 0°C = 273 K। ΔS = 336000 J / 273 K ≈ 1230.77 J/K। যেহেতু বরফ গলে তরল হচ্ছে এবং বিশৃঙ্খলা বাড়ছে, তাই এনট্রপি বৃদ্ধি পাবে। 1231 J/K সবচেয়ে কাছাকাছি উত্তর।</p>",
+        },
+        {
+          id: 31,
+          question:
+            "কোনো তাপমান যন্ত্র 0°C তাপমাত্রায় 0.5°C পাঠ দেয় এবং 100°C তাপমাত্রায় 100.8°C পাঠ দেয়। 26°C তাপমাত্রায় যন্ত্রটি কত পাঠ দিবে?",
+          options: {
+            a: "25°C",
+            b: "27°C",
+            c: "26.58°C",
+            d: "কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>ত্রুটিযুক্ত থার্মোমিটারের পাঠের জন্য সম্পর্কটি হলো (T - T_ice) / (T_steam - T_ice) = (X - X_ice) / (X_steam - X_ice)। এখানে T হল প্রকৃত তাপমাত্রা, X হল যন্ত্রের পাঠ। (26 - 0) / (100 - 0) = (X - 0.5) / (100.8 - 0.5)। 26 / 100 = (X - 0.5) / 100.3। 0.26 = (X - 0.5) / 100.3। X - 0.5 = 0.26 × 100.3 = 26.078। X = 26.078 + 0.5 = 26.578°C।</p>",
+        },
+        {
+          id: 32,
+          question:
+            "5 g ভরের একটি সীসার বুলেট কোনো দেয়ালে বাধাপ্রাপ্ত হলে তার তাপমাত্রা 160 K বৃদ্ধি পায়। অন্য কোনোভাবে তাপ নষ্ট না হলে বুলেটের বেগ কত ছিল? [সীসার আপেক্ষিক তাপ = 125 J kg⁻¹ K⁻¹]",
+          options: {
+            a: "137 ms⁻¹",
+            b: "141.42 ms⁻¹",
+            c: "200 ms⁻¹",
+            d: "500 ms⁻¹",
+          },
+          correct: "c",
+          explanation:
+            "<p>বুলেটের গতিশক্তি (½mv²) সম্পূর্ণরূপে তাপশক্তিতে (mcΔT) রূপান্তরিত হয়েছে। ½mv² = mcΔT। v = √(2cΔT)। এখানে, c = 125 J kg⁻¹K⁻¹, ΔT = 160 K। v = √(2 × 125 × 160) = √(40000) = 200 m/s। সুতরাং, বুলেটের বেগ ছিল 200 m/s।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                    <label class="option" data-option="${option}">
+                    <div class="circle">${option}</div>
+                    <span class="option-text">${question.options[option]}</span>
+                    </label>`;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                             <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                             <div class="explanation-content">
+                                                                               <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                               ${question.explanation}
+                                                                             </div>
+                                                                           </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                                        <p class="question-label">${
+                                                                          index +
+                                                                          1
+                                                                        }. ${
+            question.question
+          }</p>
+                                                                        <div class="options">
+                                                                          ${optionsHTML}
+                                                                        </div>
+                                                                        ${explanationHTML}
+                                                                      `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
